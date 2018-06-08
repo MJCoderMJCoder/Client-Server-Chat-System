@@ -27,7 +27,7 @@ public class UdpClient {
 					while (true) {
 						try {
 							// 指定封装数据的字节数组和数据的大小。用于接收端（接收端不需要明确知道数据的来源，只需要接收到数据即可）。
-							byte[] buf = new byte[999999990];
+							byte[] buf = new byte[9999990];
 							DatagramPacket datagramPacket = new DatagramPacket(buf, buf.length);
 							datagramSocket.receive(datagramPacket); // 从数据报中取出数据
 							String onlineUsers = new String(datagramPacket.getData(), 0, datagramPacket.getLength());
