@@ -8,6 +8,8 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.Socket;
 
+import com.cs.util.GZipUtils;
+
 /**
  * @author MJCoder
  *
@@ -32,7 +34,8 @@ public class TcpClient {
 
 			OutputStream outToServer = client.getOutputStream();
 			DataOutputStream out = new DataOutputStream(outToServer);
-			out.writeUTF("userId=" + userId + "&username=" + username);
+			// out.writeUTF("userId=" + userId + "&username=" + username);
+			out.write(GZipUtils.compress("userId=" + userId + "&username=" + username));
 			// InputStream inFromServer = client.getInputStream();
 			// DataInputStream in = new DataInputStream(inFromServer);
 			// System.out.println("服务器响应： " + in.readUTF());

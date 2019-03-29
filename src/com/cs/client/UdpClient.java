@@ -10,6 +10,7 @@ import java.net.SocketAddress;
 import java.net.SocketException;
 
 import com.cs.GUI.ChatUI;
+import com.cs.util.GZipUtils;
 
 /**
  * @author MJCoder
@@ -30,7 +31,8 @@ public class UdpClient {
 							byte[] buf = new byte[9999990];
 							DatagramPacket datagramPacket = new DatagramPacket(buf, buf.length);
 							datagramSocket.receive(datagramPacket); // 从数据报中取出数据
-							String onlineUsers = new String(datagramPacket.getData(), 0, datagramPacket.getLength());
+							// String onlineUsers = new String(datagramPacket.getData(), 0, datagramPacket.getLength());
+							String onlineUsers = new String(GZipUtils.uncompress(datagramPacket.getData()));
 							ChatUI.updateOnline(onlineUsers);
 						} catch (IOException e) {
 							// TODO Auto-generated catch block

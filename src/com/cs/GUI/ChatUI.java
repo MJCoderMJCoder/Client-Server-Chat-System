@@ -38,6 +38,7 @@ import com.cs.message.DisconnectMessage;
 import com.cs.message.Message;
 import com.cs.message.MessageTo;
 import com.cs.user.User;
+import com.cs.util.GZipUtils;
 
 /**
  * @author MJCoder
@@ -88,14 +89,20 @@ public class ChatUI {
 				// 持续等待接收服务器信息直至退出
 				while (isConnecting) {
 					try {
-						String message = new DataInputStream(socket.getInputStream()).readUTF();
-						String sender = message.substring(0, message.indexOf(":"));
-						String word = message.substring(message.indexOf(":") + 1);
-						// 在聊天窗打印聊天信息
-						cframe.jtaChat.append(
-								cframe.simpleDateFormat.format(new Date()) + " \t\t " + sender + ":\n" + word + "\n\n");
-						// 显示最新消息
-						cframe.jtaChat.setCaretPosition(cframe.jtaChat.getDocument().getLength());
+						InputStream inputStream = socket.getInputStream();
+						if (inputStream.available() > 0) {
+							byte buffer[] = new byte[inputStream.available()];
+							inputStream.read(buffer);
+							String message = new String(GZipUtils.uncompress(buffer));
+							System.out.println("客户端接收到的服务端消息：" + message);
+							// String message = new DataInputStream(socket.getInputStream()).readUTF();
+							String sender = message.substring(0, message.indexOf(":"));
+							String word = message.substring(message.indexOf(":") + 1);
+							// 在聊天窗打印聊天信息
+							cframe.jtaChat.append(cframe.simpleDateFormat.format(new Date()) + "\t" + sender + ":\n\t" + word + "\n\n");
+							// 显示最新消息
+							cframe.jtaChat.setCaretPosition(cframe.jtaChat.getDocument().getLength());
+						}
 					} catch (IOException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
@@ -255,8 +262,7 @@ class ClientFrame extends JFrame {
 		btnSend.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent event) {
-				if (jtaSay.getText().contains(";") || jtaSay.getText().contains("=disconnect")
-						|| jtaSay.getText().contains("username=")) {
+				if (jtaSay.getText().contains(";") || jtaSay.getText().contains("=disconnect") || jtaSay.getText().contains("username=")) {
 					jtaSay.setText("不能包含特殊字符，比如：;=&");
 				} else {
 					try {
@@ -267,19 +273,19 @@ class ClientFrame extends JFrame {
 						if (selectedIndex.length > 0) {
 							StringBuilder stringBuilder = new StringBuilder("");
 							for (int i = 0; i < selectedIndex.length; i++) {
-								Message message = new MessageTo(ChatUI.userId, jtaSay.getText(),
-										Long.parseLong((String) tbm.getValueAt(selectedIndex[i], 0)));
+								Message message = new MessageTo(ChatUI.userId, jtaSay.getText(), Long.parseLong((String) tbm.getValueAt(selectedIndex[i], 0)));
 								stringBuilder.append(message.toString());
 								stringBuilder.append(";");
 							}
 							// 在聊天窗打印发送动作信息
-							jtaChat.append(simpleDateFormat.format(new Date()) + " \t\t " + username + "：\n");
+							jtaChat.append(simpleDateFormat.format(new Date()) + "\t" + username + "：\n\t");
 							// 显示发送消息
 							jtaChat.append(jtaSay.getText() + "\n\n");
 							// 向服务器发送聊天信息
 							OutputStream outToServer = ChatUI.socket.getOutputStream();
 							DataOutputStream out = new DataOutputStream(outToServer);
-							out.writeUTF(stringBuilder.toString());
+							// out.writeUTF(stringBuilder.toString());
+							out.write(GZipUtils.compress(stringBuilder.toString()));
 						}
 					} catch (Exception e) {
 						e.printStackTrace();
@@ -310,13 +316,15 @@ class ClientFrame extends JFrame {
 					OutputStream outToServer = ChatUI.socket.getOutputStream();
 					DataOutputStream out = new DataOutputStream(outToServer);
 					Message message = new DisconnectMessage(ChatUI.userId, "");
-					out.writeUTF(message.toString());
+					// out.writeUTF(message.toString());
+					out.write(GZipUtils.compress(message.toString()));
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
+				} finally {
+					// 退出
+					System.exit(0);
 				}
-				// 退出
-				System.exit(0);
 			}
 		});
 		// 添加在线列表项被鼠标选中的相应事件
@@ -334,7 +342,7 @@ class ClientFrame extends JFrame {
 					// stringBuilder.append("=");
 					stringBuilder.append((String) tbm.getValueAt(selectedIndex[i], 1));
 					if (i != selectedIndex.length - 1) {
-						stringBuilder.append(",");
+						stringBuilder.append("；");
 					}
 				}
 				lblReceiver.setText("发送给：" + stringBuilder.toString());
